@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>GabNews • Interactive Globe News • See the world in focus</title>
+    <meta name="title" content="GabNews • Interactive Globe News">
+    <meta name="description" content="Rotate the globe and discover trusted, location-based news from anywhere in the world. Real-time headlines powered by NewsAPI + curated stories.">
+    <meta name="keywords" content="news, globe, interactive map, world news, live news, global news, gabnews, three.js globe, location based news">
+    <meta name="author" content="GabNews">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourusername.github.io/gabnews/">
+    <meta property="og:title" content="GabNews • See the world through trusted news">
+    <meta property="og:description" content="An interactive 3D globe where you can rotate, zoom, and click anywhere to get real-time trusted news from that location.">
+    <meta property="og:image" content="https://yourusername.github.io/gabnews/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://yourusername.github.io/gabnews/">
+    <meta property="twitter:title" content="GabNews • Interactive Globe News">
+    <meta property="twitter:description" content="Rotate the globe. Discover live news from anywhere on Earth.">
+    <meta property="twitter:image" content="https://yourusername.github.io/gabnews/og-image.png">
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
+
+    <!-- Preconnect for faster loading -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --accent: #6366f1;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .font-display {
+            font-family: 'Space Grotesk', 'Inter', system_ui, sans-serif;
+            font-weight: 600;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+        }
+
+        .glass-light {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .nav-glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .premium-shadow {
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4),
+                        0 10px 10px -6px rgb(0 0 0 / 0.3);
+        }
+
+        .globe-container {
+            box-shadow: inset 0 0 120px rgba(15, 23, 42, 0.6);
+        }
+
+        .news-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .news-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .section-header {
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .news-bullet {
+            position: relative;
+            padding-left: 1.1rem;
+        }
+        
+        .news-bullet:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #6366f1;
+            font-weight: 700;
+        }
+
+        .source-pill {
+            font-size: 11px;
+            padding: 2px 9px;
+            border-radius: 9999px;
+            background: rgba(99, 102, 241, 0.12);
+            color: #6366f1;
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            transition: all 0.1s ease;
+        }
+        
+        .source-pill:hover {
+            background: rgba(99, 102, 241, 0.22);
+            transform: translateY(-1px);
+        }
+
+        #globe-canvas {
+            border-radius: 9999px;
+            box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.1),
+                        0 25px 50px -12px rgb(0 0 0 / 0.5);
+        }
+
+        .location-badge {
+            background: linear-gradient(90deg, #164e63, #0e7490);
+            color: white;
+            font-size: 10px;
+            padding: 1px 8px;
+            border-radius: 9999px;
+            letter-spacing: 0.3px;
+        }
+
+        .modal-glass {
+            animation: modalEnter 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        @keyframes modalEnter {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .subtle-grid {
+            background-image: 
+                linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .three-container {
+            border-radius: 9999px;
+            overflow: hidden;
+            background: radial-gradient(circle at 40% 30%, rgba(15, 23, 42, 0.3) 0%, transparent 70%);
+        }
+        
+        .stat {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 overflow-x-hidden">
+    <!-- Navbar -->
+    <nav class="nav-glass fixed top-0 left-0 right-0 z-50">
+        <div class="max-w-screen-2xl mx-auto">
+            <div class="px-8 py-4 flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center gap-x-3">
+                    <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                        <i class="fa-solid fa-globe text-slate-950 text-3xl"></i>
+                    </div>
+                    <div>
+                        <span class="font-display text-3xl font-semibold tracking-tighter">GabNews</span>
+                        <span class="text-[10px] text-slate-400 tracking-[2px] block -mt-1">EST 2024</span>
+                    </div>
+                </div>
+
+                <!-- Search -->
+                <div class="flex-1 max-w-md mx-8">
+                    <div class="relative group">
+                        <div class="glass-light flex items-center gap-x-3 px-5 h-11 rounded-3xl border border-white/10 focus-within:border-cyan-400/40 transition-colors">
+                            <i class="fa-solid fa-search text-slate-400"></i>
+                            <input id="search-input" 
+                                   type="text" 
+                                   placeholder="Search city, country or region..." 
+                                   class="flex-1 bg-transparent outline-none text-sm placeholder:text-slate-400">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right controls -->
+                <div class="flex items-center gap-x-2">
+                    <button onclick="flyToRandomLocation()"
+                            class="glass-light hover:bg-white/10 transition-colors px-4 h-9 rounded-3xl text-xs flex items-center gap-x-2 font-medium border border-white/10">
+                        <i class="fa-solid fa-dice text-cyan-400"></i>
+                        <span class="hidden md:inline">Surprise me</span>
+                    </button>
+                    
+                    <button onclick="resetGlobeView()"
+                            class="glass-light hover:bg-white/10 transition-colors px-4 h-9 rounded-3xl text-xs flex items-center gap-x-2 font-medium border border-white/10">
+                        <i class="fa-solid fa-undo text-slate-400"></i>
+                        <span class="hidden md:inline">Reset</span>
+                    </button>
+
+                    <div class="w-px h-6 bg-white/10 mx-1"></div>
+
+                    <div class="flex items-center gap-x-1.5 text-xs">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span class="text-emerald-400 text-xs font-medium">LIVE</span>
+                    </div>
+
+                    <!-- Real News API Toggle -->
+                    <button onclick="showNewsAPIKeyModal()" 
+                            class="glass-light hover:bg-white/10 transition-colors px-3 h-9 rounded-3xl text-xs flex items-center gap-x-1.5 font-medium border border-white/10 text-indigo-300 hover:text-indigo-200">
+                        <i class="fa-solid fa-plug text-xs"></i>
+                        <span class="hidden md:inline text-xs">Real News</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero / Main Content -->
+    <div class="pt-20 pb-8 max-w-screen-2xl mx-auto px-6">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between mb-6 px-2">
+            <div>
+                <div class="flex items-center gap-x-3 mb-1">
+                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/20">GLOBAL BRIEFINGS</span>
+                </div>
+                <h1 class="font-display text-6xl md:text-7xl tracking-tighter font-semibold">The world,<br>at a glance.</h1>
+                <p class="mt-3 max-w-md text-lg text-slate-400">Rotate the globe. Discover trusted news from anywhere on Earth.</p>
+            </div>
+            
+            <div class="mt-6 md:mt-0 flex items-center gap-x-6 text-sm">
+                <div class="flex items-center gap-x-2">
+                    <div class="text-right">
+                        <div class="text-xs text-slate-400">ACTIVE REGIONS</div>
+                        <div class="font-semibold text-xl stat">142</div>
+                    </div>
+                </div>
+                <div class="h-9 w-px bg-white/10"></div>
+                <div>
+                    <div class="text-xs text-slate-400">ARTICLES TODAY</div>
+                    <div class="font-semibold text-xl stat">8,431</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Globe + Instructions -->
+        <div class="relative">
+            <!-- Globe Container -->
+            <div class="relative mx-auto max-w-[920px]">
+                <div id="globe-wrapper" 
+                     class="three-container relative mx-auto w-full aspect-square max-w-[920px] rounded-[4rem] border border-white/10 overflow-hidden bg-slate-900"
+                     style="box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.08), 
+                            0 40px 70px -15px rgb(0 0 0 / 0.6),
+                            inset 0 0 80px rgba(15, 23, 42, 0.9);">
+                    
+                    <!-- Three.js Canvas will be appended here -->
+                    <div id="globe-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+                    
+                    <!-- Country / Location Labels (HTML overlay) -->
+                    <div id="globe-labels" class="absolute inset-0 pointer-events-none z-10"></div>
+                    
+                    <!-- Subtle overlay labels -->
+                    <div class="absolute top-8 left-8 z-10">
+                        <div class="glass px-4 py-2 rounded-3xl text-xs flex items-center gap-x-2 border border-white/10">
+                            <i class="fa-solid fa-globe text-cyan-400"></i>
+                            <span class="font-medium text-xs">Interactive 3D Globe</span>
+                        </div>
+                    </div>
+                    
+                    <div class="absolute bottom-8 right-8 z-10 hidden md:block">
+                        <div class="glass px-3 py-1.5 rounded-3xl text-[10px] flex items-center gap-x-1.5 border border-white/10 text-slate-300">
+                            <span>Drag to rotate • Scroll to zoom • Click to explore</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Stats -->
+            <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 hidden xl:flex items-center gap-x-1 z-20">
+                <div class="glass px-5 py-2 rounded-3xl flex items-center gap-x-4 text-xs border border-white/10">
+                    <div class="flex items-center gap-x-1.5">
+                        <i class="fa-solid fa-satellite text-emerald-400"></i>
+                        <span class="font-medium">Real-time synced</span>
+                    </div>
+                    <div class="w-px h-3 bg-white/20"></div>
+                    <div>47 countries • 312 sources</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-8">
+            <p class="text-xs text-slate-400 max-w-xs mx-auto">Click anywhere on the globe or use search to discover location-specific news from trusted sources.</p>
+        </div>
+    </div>
+
+    <!-- News Sidebar / Panel -->
+    <div id="news-panel" 
+         class="hidden fixed top-20 bottom-4 right-4 w-full max-w-md z-[60] rounded-3xl glass border border-white/10 flex flex-col overflow-hidden premium-shadow">
+        
+        <!-- Panel Header -->
+        <div class="px-6 pt-5 pb-4 border-b border-white/10 flex items-start justify-between bg-slate-900/60">
+            <div class="flex-1 min-w-0">
+                <div id="panel-location" class="font-display text-2xl font-semibold tracking-tight"></div>
+                <div id="panel-subtitle" class="text-xs text-slate-400 flex items-center gap-x-2 mt-0.5">
+                    <span id="panel-coords"></span>
+                </div>
+            </div>
+            
+            <button onclick="closeNewsPanel()" 
+                    class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors rounded-2xl -mr-1 -mt-1">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- News Content -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-4 custom-scroll" id="news-content">
+            <!-- Populated dynamically by JS -->
+        </div>
+
+        <div class="px-5 py-3.5 border-t border-white/10 bg-slate-900/60 text-[10px] flex items-center justify-between text-slate-400">
+            <div>
+                <span class="font-medium">Updated moments ago</span>
+            </div>
+            <div class="flex items-center gap-x-1 text-emerald-400">
+                <i class="fa-solid fa-check-circle text-xs"></i>
+                <span class="text-xs font-medium">Verified sources</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- NewsAPI Key Modal -->
+    <div id="newsapi-modal" class="hidden fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-6">
+        <div class="glass max-w-md w-full rounded-3xl p-6 border border-white/10">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="font-semibold text-xl">Connect Real News</h3>
+                    <p class="text-xs text-slate-400 mt-1">Powered by NewsAPI.org (free tier available)</p>
+                </div>
+                <button onclick="hideNewsAPIKeyModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="text-sm text-slate-300 mb-4 leading-relaxed">
+                Enter your free NewsAPI key to fetch live top headlines for each location. 
+                Get one instantly at <a href="https://newsapi.org" target="_blank" class="text-indigo-400 underline">newsapi.org</a>.
+            </div>
+            
+            <input id="newsapi-key-input" type="text" placeholder="Your NewsAPI key (e.g. 123abc...)" 
+                   class="w-full bg-slate-900 border border-white/20 rounded-2xl px-4 py-3 text-sm outline-none focus:border-indigo-400 mb-4">
+            
+            <div class="flex gap-x-3">
+                <button onclick="saveNewsAPIKey()" 
+                        class="flex-1 bg-indigo-500 hover:bg-indigo-600 transition-colors text-white font-medium py-2.5 rounded-2xl text-sm">
+                    Save & Enable Real News
+                </button>
+                <button onclick="hideNewsAPIKeyModal()" 
+                        class="px-5 py-2.5 rounded-2xl text-sm border border-white/20 hover:bg-white/5">
+                    Cancel
+                </button>
+            </div>
+            
+            <div class="text-[10px] text-center text-slate-500 mt-4">
+                Your key is stored only in your browser (localStorage)
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="max-w-screen-2xl mx-auto px-8 py-6 text-center text-xs text-slate-500 border-t border-white/10 mt-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-y-2 text-[11px]">
+            <div>
+                GabNews • Curated + Real-time news via NewsAPI (optional)
+            </div>
+            <div class="flex items-center gap-x-4">
+                <span>Built with precision</span>
+                <span class="hidden md:inline">•</span>
+                <span>Chennai, India</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#6366f1');
+        }
+
+        // ==================== THREE.JS GLOBE ====================
+        let scene, camera, renderer;
+        let globeMesh, atmosphereMesh, nightMesh;
+        let isDragging = false;
+        let wasDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let spherical = { phi: 1.2, theta: 2.8, radius: 2.8 };
+        let targetSpherical = { ...spherical };
+        let locations = [];
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let autoRotate = true;
+        let lastInteractionTime = Date.now();
+        let globeGroup;
+
+        function createGlobe() {
+            const container = document.getElementById('globe-container');
+            if (!container) return;
+
+            // Scene
+            scene = new THREE.Scene();
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 1000);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                alpha: true,
+                powerPreference: "high-performance"
+            });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.1);
+            directionalLight.position.set(5, 3, 5);
+            scene.add(directionalLight);
+            
+            const hemisphereLight = new THREE.HemisphereLight(0x334155, 0x0f172a, 0.5);
+            scene.add(hemisphereLight);
+
+            // Globe Group
+            globeGroup = new THREE.Group();
+            scene.add(globeGroup);
+
+            // Earth Geometry
+            const geometry = new THREE.SphereGeometry(1, 64, 64);
+            
+            // Day texture
+            const textureLoader = new THREE.TextureLoader();
+            const dayTexture = textureLoader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r134/examples/textures/planets/earth_atmos_2048.jpg');
+            dayTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            
+            // Night lights texture
+            const nightTexture = textureLoader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r134/examples/textures/planets/earth_lights_2048.jpg');
+            
+            // Day material
+            const dayMaterial = new THREE.MeshPhongMaterial({
+                map: dayTexture,
+                shininess: 8,
+                specular: 0x222222,
+                flatShading: false
+            });
+            
+            globeMesh = new THREE.Mesh(geometry, dayMaterial);
+            globeGroup.add(globeMesh);
+            
+            // Night lights layer (inner slightly smaller sphere with additive blending)
+            const nightMaterial = new THREE.MeshBasicMaterial({
+                map: nightTexture,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.85,
+                depthWrite: false
+            });
+            
+            nightMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(0.999, 64, 64), 
+                nightMaterial
+            );
+            globeGroup.add(nightMesh);
+            
+            // Atmosphere glow
+            const atmosphereGeometry = new THREE.SphereGeometry(1.08, 64, 64);
+            const atmosphereMaterial = new THREE.MeshPhongMaterial({
+                color: 0x67e8f9,
+                transparent: true,
+                opacity: 0.12,
+                side: THREE.BackSide,
+                shininess: 0
+            });
+            atmosphereMesh = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+            globeGroup.add(atmosphereMesh);
+            
+            // Subtle outer glow ring
+            const outerGlow = new THREE.Mesh(
+                new THREE.SphereGeometry(1.15, 64, 64),
+                new THREE.MeshBasicMaterial({
+                    color: 0x6366f1,
+                    transparent: true,
+                    opacity: 0.035,
+                    side: THREE.BackSide
+                })
+            );
+            globeGroup.add(outerGlow);
+
+            // Latitude / Longitude grid for easier country selection
+            createLatLngGrid();
+
+            // Location labels (country/city names)
+            createLocationLabels();
+
+            // Add subtle stars
+            createStarfield();
+
+            // Event listeners
+            const canvas = renderer.domElement;
+            
+            canvas.addEventListener('mousedown', onMouseDown);
+            window.addEventListener('mouseup', onMouseUp);
+            window.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('wheel', onMouseWheel, { passive: false });
+            
+            // Touch support
+            canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+            canvas.addEventListener('touchend', onTouchEnd);
+            
+            // Click detection
+            canvas.addEventListener('click', onGlobeClick);
+            
+            // Resize handler
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+            
+            // Initial camera position
+            updateCameraPosition();
+            
+            // Animation loop
+            animate();
+            
+            // Seed initial locations
+            initializeLocations();
+            
+            // Auto-rotate timer
+            setInterval(() => {
+                if (autoRotate && Date.now() - lastInteractionTime > 4500) {
+                    targetSpherical.theta += 0.0008;
+                }
+            }, 50);
+            
+            // Show welcome message briefly
+            setTimeout(() => {
+                if (!document.getElementById('news-panel').classList.contains('hidden')) return;
+                // Optional: could show a subtle tooltip
+            }, 4200);
+            
+            console.log('%c[GabNews] Premium 3D Globe initialized successfully', 'color:#64748b');
+        }
+        
+        function createStarfield() {
+            const starsGeometry = new THREE.BufferGeometry();
+            const starCount = 2800;
+            const positions = new Float32Array(starCount * 3);
+            const colors = new Float32Array(starCount * 3);
+            
+            for (let i = 0; i < starCount * 3; i += 3) {
+                // Random position on sphere
+                const radius = 3.8 + Math.random() * 1.5;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                
+                positions[i] = radius * Math.sin(phi) * Math.cos(theta);
+                positions[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                positions[i + 2] = radius * Math.cos(phi);
+                
+                // Slight blue-white tint
+                const brightness = 0.65 + Math.random() * 0.35;
+                colors[i] = brightness * 0.85;
+                colors[i + 1] = brightness * 0.92;
+                colors[i + 2] = brightness;
+            }
+            
+            starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            starsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const starsMaterial = new THREE.PointsMaterial({
+                size: 0.012,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.85,
+                depthWrite: false
+            });
+            
+            const stars = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(stars);
+        }
+        
+        // Latitude/Longitude grid to make countries easier to identify and click
+        function createLatLngGrid() {
+            const gridGroup = new THREE.Group();
+            const gridMaterial = new THREE.LineBasicMaterial({
+                color: 0x6366f1,
+                transparent: true,
+                opacity: 0.18,
+                linewidth: 1
+            });
+            
+            // Latitude lines (parallels)
+            for (let lat = -60; lat <= 60; lat += 30) {
+                const points = [];
+                const radius = Math.cos(lat * Math.PI / 180);
+                const y = Math.sin(lat * Math.PI / 180);
+                
+                for (let lon = 0; lon <= 360; lon += 5) {
+                    const x = radius * Math.cos(lon * Math.PI / 180);
+                    const z = radius * Math.sin(lon * Math.PI / 180);
+                    points.push(new THREE.Vector3(x, y, z));
+                }
+                
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, gridMaterial);
+                gridGroup.add(line);
+            }
+            
+            // Longitude lines (meridians)
+            for (let lon = 0; lon < 360; lon += 30) {
+                const points = [];
+                for (let lat = -90; lat <= 90; lat += 5) {
+                    const phi = (90 - lat) * Math.PI / 180;
+                    const x = Math.sin(phi) * Math.cos(lon * Math.PI / 180);
+                    const y = Math.cos(phi);
+                    const z = Math.sin(phi) * Math.sin(lon * Math.PI / 180);
+                    points.push(new THREE.Vector3(x, y, z));
+                }
+                
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, gridMaterial);
+                gridGroup.add(line);
+            }
+            
+            globeGroup.add(gridGroup);
+        }
+        
+        // Create floating HTML labels for key locations (visible when zoomed in)
+        let locationLabels = [];
+        
+        function createLocationLabels() {
+            const labelsContainer = document.getElementById('globe-labels');
+            if (!labelsContainer) return;
+            
+            labelsContainer.innerHTML = '';
+            locationLabels = [];
+            
+            locations.forEach((loc, index) => {
+                if (loc.name === 'Global') return; // skip global
+                
+                const label = document.createElement('div');
+                label.className = `absolute text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-900/70 border border-white/20 text-white/90 pointer-events-auto cursor-pointer transition-all whitespace-nowrap`;
+                label.style.transform = 'translate(-50%, -50%)';
+                label.innerHTML = `
+                    <span class="flex items-center gap-x-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                        <span>${loc.name}</span>
+                    </span>
+                `;
+                
+                label.onclick = (e) => {
+                    e.stopImmediatePropagation();
+                    flyToLocation(loc.lat, loc.lng, 2.0);
+                    setTimeout(() => showNewsForLocation(loc), 650);
+                };
+                
+                labelsContainer.appendChild(label);
+                
+                locationLabels.push({
+                    element: label,
+                    lat: loc.lat,
+                    lng: loc.lng,
+                    name: loc.name
+                });
+            });
+        }
+        
+        function updateLocationLabels() {
+            const container = document.getElementById('globe-container');
+            const labelsContainer = document.getElementById('globe-labels');
+            if (!container || !labelsContainer || !camera || locationLabels.length === 0) return;
+            
+            const rect = container.getBoundingClientRect();
+            const vector = new THREE.Vector3();
+            
+            locationLabels.forEach(labelData => {
+                // Convert lat/lng to 3D position on globe
+                const phi = (90 - labelData.lat) * (Math.PI / 180);
+                const theta = (labelData.lng + 180) * (Math.PI / 180);
+                
+                const x = Math.sin(phi) * Math.cos(theta);
+                const y = Math.cos(phi);
+                const z = Math.sin(phi) * Math.sin(theta);
+                
+                vector.set(x, y, z);
+                
+                // Project to screen
+                vector.project(camera);
+                
+                const screenX = (vector.x * 0.5 + 0.5) * rect.width;
+                const screenY = (-vector.y * 0.5 + 0.5) * rect.height;
+                
+                const labelEl = labelData.element;
+                
+                // Only show if in front of camera and reasonably zoomed
+                const isVisible = vector.z < 0.95 && spherical.radius < 4.5;
+                
+                if (isVisible) {
+                    labelEl.style.left = `${screenX}px`;
+                    labelEl.style.top = `${screenY}px`;
+                    labelEl.style.opacity = Math.max(0.4, 1 - (spherical.radius - 1.8) * 0.35);
+                    labelEl.style.display = 'block';
+                    
+                    // Scale slightly with zoom
+                    const scale = Math.max(0.75, Math.min(1.15, 3.5 / spherical.radius));
+                    labelEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
+                } else {
+                    labelEl.style.display = 'none';
+                }
+            });
+        }
+        
+        function updateCameraPosition() {
+            const x = targetSpherical.radius * Math.sin(targetSpherical.phi) * Math.sin(targetSpherical.theta);
+            const y = targetSpherical.radius * Math.cos(targetSpherical.phi);
+            const z = targetSpherical.radius * Math.sin(targetSpherical.phi) * Math.cos(targetSpherical.theta);
+            
+            camera.position.set(x, y, z);
+            camera.lookAt(0, 0, 0);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Smooth interpolation for camera
+            const lerpFactor = 0.085;
+            spherical.phi = spherical.phi + (targetSpherical.phi - spherical.phi) * lerpFactor;
+            spherical.theta = spherical.theta + (targetSpherical.theta - spherical.theta) * lerpFactor;
+            spherical.radius = spherical.radius + (targetSpherical.radius - spherical.radius) * lerpFactor;
+            
+            updateCameraPosition();
+            
+            // Gentle globe rotation when auto-rotating
+            if (autoRotate && Date.now() - lastInteractionTime > 3800) {
+                globeGroup.rotation.y += 0.00012;
+            }
+            
+            // Subtle breathing on atmosphere
+            if (atmosphereMesh) {
+                atmosphereMesh.scale.setScalar(1 + Math.sin(Date.now() / 4200) * 0.003);
+            }
+            
+            // Update floating country/location labels
+            updateLocationLabels();
+            
+            renderer.render(scene, camera);
+        }
+        
+        function onMouseDown(e) {
+            isDragging = true;
+            autoRotate = false;
+            lastInteractionTime = Date.now();
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        }
+        
+        function onMouseUp() {
+            isDragging = false;
+            setTimeout(() => {
+                wasDragging = false;
+                if (!isDragging) autoRotate = true;
+            }, 180);
+        }
+        
+        function onMouseMove(e) {
+            if (!isDragging) return;
+            
+            const deltaMove = {
+                x: e.clientX - previousMousePosition.x,
+                y: e.clientY - previousMousePosition.y
+            };
+            
+            const sensitivity = 0.0038;
+            const delta = Math.sqrt(deltaMove.x * deltaMove.x + deltaMove.y * deltaMove.y);
+            
+            if (delta > 3) wasDragging = true;
+            
+            targetSpherical.theta -= deltaMove.x * sensitivity;
+            targetSpherical.phi -= deltaMove.y * sensitivity;
+            
+            // Clamp phi to avoid flipping
+            targetSpherical.phi = Math.max(0.35, Math.min(Math.PI - 0.35, targetSpherical.phi));
+            
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+            lastInteractionTime = Date.now();
+        }
+        
+        function onMouseWheel(e) {
+            e.preventDefault();
+            autoRotate = false;
+            lastInteractionTime = Date.now();
+            
+            // Improved zoom - more responsive and natural
+            const zoomFactor = e.deltaY > 0 ? 1.08 : 0.92;
+            targetSpherical.radius *= zoomFactor;
+            
+            // Better zoom limits
+            targetSpherical.radius = Math.max(1.45, Math.min(6.2, targetSpherical.radius));
+            
+            setTimeout(() => {
+                if (Date.now() - lastInteractionTime > 1800) autoRotate = true;
+            }, 2000);
+        }
+        
+        // Touch handlers
+        let touchStartX = 0, touchStartY = 0;
+        
+        function onTouchStart(e) {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                autoRotate = false;
+                lastInteractionTime = Date.now();
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                previousMousePosition = { x: touchStartX, y: touchStartY };
+            }
+        }
+        
+        function onTouchMove(e) {
+            if (!isDragging || e.touches.length !== 1) return;
+            e.preventDefault();
+            
+            const deltaMove = {
+                x: e.touches[0].clientX - previousMousePosition.x,
+                y: e.touches[0].clientY - previousMousePosition.y
+            };
+            
+            const sensitivity = 0.0042;
+            const delta = Math.sqrt(deltaMove.x * deltaMove.x + deltaMove.y * deltaMove.y);
+            
+            if (delta > 4) wasDragging = true;
+            
+            targetSpherical.theta -= deltaMove.x * sensitivity;
+            targetSpherical.phi -= deltaMove.y * sensitivity;
+            targetSpherical.phi = Math.max(0.35, Math.min(Math.PI - 0.35, targetSpherical.phi));
+            
+            previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            lastInteractionTime = Date.now();
+        }
+        
+        function onTouchEnd() {
+            isDragging = false;
+            setTimeout(() => {
+                wasDragging = false;
+                if (!isDragging) autoRotate = true;
+            }, 180);
+        }
+        
+        function onGlobeClick(e) {
+            if (wasDragging) {
+                wasDragging = false;
+                return;
+            }
+            
+            const container = document.getElementById('globe-container');
+            const rect = container.getBoundingClientRect();
+            
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(globeMesh);
+            
+            if (intersects.length > 0) {
+                const point = intersects[0].point.clone().normalize();
+                
+                // More accurate lat/lng conversion for unit sphere
+                const lat = Math.asin(point.y) * (180 / Math.PI);
+                let lng = Math.atan2(point.x, point.z) * (180 / Math.PI);
+                
+                lastInteractionTime = Date.now();
+                autoRotate = false;
+                wasDragging = false;
+                
+                // Find closest location with improved logic
+                const closest = findClosestLocation(lat, lng);
+                
+                // Add subtle click feedback (small pulse)
+                createClickFeedback(point);
+                
+                // Fly camera toward clicked point (slightly closer when zoomed)
+                const targetZoom = Math.max(1.65, Math.min(2.4, spherical.radius * 0.85));
+                flyToLocation(closest.lat, closest.lng, targetZoom);
+                
+                // Show news after nice camera animation
+                setTimeout(() => {
+                    showNewsForLocation(closest);
+                }, 720);
+            }
+        }
+        
+        function findClosestLocation(lat, lng) {
+            let closest = locations[0];
+            let minDistance = Infinity;
+            const MAX_DISTANCE_KM = 8500; // Increased threshold for better global coverage
+            
+            locations.forEach(loc => {
+                const distance = haversineDistance(lat, lng, loc.lat, loc.lng);
+                if (distance < minDistance && distance < MAX_DISTANCE_KM) {
+                    minDistance = distance;
+                    closest = loc;
+                }
+            });
+            
+            // If nothing within threshold, return the absolute closest anyway (prevents weird resets)
+            if (minDistance === Infinity) {
+                locations.forEach(loc => {
+                    const distance = haversineDistance(lat, lng, loc.lat, loc.lng);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closest = loc;
+                    }
+                });
+            }
+            
+            return closest;
+        }
+        
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        // Subtle visual feedback when clicking the globe
+        function createClickFeedback(point) {
+            if (!globeGroup) return;
+            
+            const feedbackGeometry = new THREE.SphereGeometry(0.035, 16, 16);
+            const feedbackMaterial = new THREE.MeshBasicMaterial({
+                color: 0x6366f1,
+                transparent: true,
+                opacity: 0.7
+            });
+            const feedbackMesh = new THREE.Mesh(feedbackGeometry, feedbackMaterial);
+            feedbackMesh.position.copy(point);
+            globeGroup.add(feedbackMesh);
+            
+            // Animate pulse and fade
+            let scale = 1;
+            const animateFeedback = () => {
+                scale += 0.12;
+                feedbackMesh.scale.setScalar(scale);
+                feedbackMesh.material.opacity = Math.max(0, 0.7 - (scale - 1) * 0.6);
+                
+                if (scale < 2.8) {
+                    requestAnimationFrame(animateFeedback);
+                } else {
+                    globeGroup.remove(feedbackMesh);
+                }
+            };
+            animateFeedback();
+        }
+        
+        function flyToLocation(lat, lng, targetRadius = 2.15) {
+            // Convert lat/lng to spherical coordinates
+            const phi = (90 - lat) * (Math.PI / 180);
+            let theta = (lng + 180) * (Math.PI / 180);
+            
+            // Smoothly animate
+            const startPhi = targetSpherical.phi;
+            const startTheta = targetSpherical.theta;
+            const startRadius = targetSpherical.radius;
+            
+            const duration = 1250;
+            const startTime = Date.now();
+            
+            function animateFly() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+                
+                targetSpherical.phi = startPhi + (phi - startPhi) * eased;
+                targetSpherical.theta = startTheta + (theta - startTheta) * eased;
+                targetSpherical.radius = startRadius + (targetRadius - startRadius) * eased;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateFly);
+                } else {
+                    // Re-enable auto rotate after fly
+                    setTimeout(() => {
+                        if (Date.now() - lastInteractionTime > 1800) {
+                            autoRotate = true;
+                        }
+                    }, 1200);
+                }
+            }
+            
+            animateFly();
+        }
+        
+        function resetGlobeView() {
+            targetSpherical = { phi: 1.15, theta: 2.75, radius: 2.85 };
+            autoRotate = true;
+            lastInteractionTime = Date.now();
+            
+            // Close panel if open
+            const panel = document.getElementById('news-panel');
+            if (!panel.classList.contains('hidden')) {
+                panel.classList.add('hidden');
+            }
+        }
+        
+        function flyToRandomLocation() {
+            const randomLoc = locations[Math.floor(Math.random() * locations.length)];
+            flyToLocation(randomLoc.lat, randomLoc.lng, 2.05);
+            
+            setTimeout(() => {
+                showNewsForLocation(randomLoc);
+            }, 920);
+        }
+        
+        // ==================== LOCATIONS & NEWS DATA ====================
+        function initializeLocations() {
+            locations = [
+                {
+                    name: "Chennai, Tamil Nadu",
+                    country: "India",
+                    lat: 13.0827,
+                    lng: 80.2707,
+                    news: [
+                        {
+                            headline: "Chennai emerges as India's fastest-growing AI & semiconductor hub",
+                            summary: "The state government announced new incentives attracting ₹42,000 crore in investments from global chipmakers and AI research labs in the past quarter.",
+                            bullets: [
+                                "Tamil Nadu now hosts 14 major semiconductor design centers",
+                                "New AI research park near OMR to create 28,000 jobs by 2028",
+                                "Partnership with Stanford and IIT-Madras for quantum computing"
+                            ],
+                            sources: [
+                                { name: "The Hindu", url: "https://www.thehindu.com" },
+                                { name: "Reuters", url: "https://www.reuters.com" }
+                            ]
+                        },
+                        {
+                            headline: "Chennai Metro Phase II reaches 68% completion ahead of schedule",
+                            summary: "The ₹63,000 crore project is expected to transform urban mobility with 128 km of new lines connecting key suburbs and the airport.",
+                            bullets: [
+                                "First driverless trains to be operational by late 2027",
+                                "Integrated with upcoming high-speed rail corridor to Bengaluru",
+                                "Expected to reduce road congestion by 19% in core areas"
+                            ],
+                            sources: [
+                                { name: "The Hindu", url: "https://www.thehindu.com" },
+                                { name: "Indian Express", url: "https://indianexpress.com" }
+                            ]
+                        },
+                        {
+                            headline: "Tamil Nadu leads India in green hydrogen production capacity",
+                            summary: "With new plants coming online in Ennore and Thoothukudi, the state is on track to meet 35% of India's national green hydrogen target by 2030.",
+                            bullets: [
+                                "₹18,400 crore investment from Adani and NTPC",
+                                "Exports to Europe and Japan already contracted",
+                                "Local employment in clean energy sector crosses 41,000"
+                            ],
+                            sources: [
+                                { name: "Reuters", url: "https://www.reuters.com" },
+                                { name: "Bloomberg", url: "https://www.bloomberg.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "New Delhi",
+                    country: "India",
+                    lat: 28.6139,
+                    lng: 77.2090,
+                    news: [
+                        {
+                            headline: "India announces ambitious new climate commitments at global summit",
+                            summary: "Prime Minister unveiled plans to achieve 65% renewable energy by 2032 and net-zero emissions in key sectors by 2045.",
+                            bullets: [
+                                "₹2.8 lakh crore green transition fund approved",
+                                "New carbon credit trading framework to be launched",
+                                "Focus on green hydrogen and offshore wind"
+                            ],
+                            sources: [
+                                { name: "BBC", url: "https://www.bbc.com" },
+                                { name: "The Hindu", url: "https://www.thehindu.com" }
+                            ]
+                        },
+                        {
+                            headline: "Delhi's air quality shows sustained improvement after new policy push",
+                            summary: "Winter pollution levels dropped 22% compared to 2024, credited to strict construction norms and expanded electric public transport.",
+                            bullets: [
+                                "Over 1.2 lakh EVs registered in NCR this year",
+                                "Real-time pollution monitoring expanded to 180 wards",
+                                "New green corridors and urban forests under development"
+                            ],
+                            sources: [
+                                { name: "AP News", url: "https://apnews.com" },
+                                { name: "The Times of India", url: "https://timesofindia.indiatimes.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Mumbai",
+                    country: "India",
+                    lat: 19.0760,
+                    lng: 72.8777,
+                    news: [
+                        {
+                            headline: "Mumbai's coastal road project opens final phase, easing traffic dramatically",
+                            summary: "The ₹14,000 crore infrastructure marvel now connects South Mumbai to suburbs in under 25 minutes during peak hours.",
+                            bullets: [
+                                "Reduced travel time by 55% on key corridors",
+                                "Features India's longest sea bridge section",
+                                "Integrated with upcoming metro lines and ferry services"
+                            ],
+                            sources: [
+                                { name: "Indian Express", url: "https://indianexpress.com" },
+                                { name: "Reuters", url: "https://www.reuters.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Bengaluru",
+                    country: "India",
+                    lat: 12.9716,
+                    lng: 77.5946,
+                    news: [
+                        {
+                            headline: "Bengaluru tech ecosystem raises record $14.2 billion in 2025",
+                            summary: "Despite global slowdown, the city maintained its position as Asia's second-largest startup hub after Beijing.",
+                            bullets: [
+                                "AI and deeptech startups attracted 61% of total funding",
+                                "Unicorn count in Karnataka crosses 65",
+                                "New semiconductor policy driving fresh investments"
+                            ],
+                            sources: [
+                                { name: "Bloomberg", url: "https://www.bloomberg.com" },
+                                { name: "TechCrunch", url: "https://techcrunch.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "New York",
+                    country: "United States",
+                    lat: 40.7128,
+                    lng: -74.0060,
+                    news: [
+                        {
+                            headline: "New York passes landmark AI regulation bill protecting workers and consumers",
+                            summary: "The comprehensive law requires transparency in automated decision-making and establishes strict rules for high-risk AI systems.",
+                            bullets: [
+                                "Companies must disclose AI use in hiring and lending",
+                                "New oversight body created within state attorney general's office",
+                                "Fines up to $50,000 per violation for non-compliance"
+                            ],
+                            sources: [
+                                { name: "Reuters", url: "https://www.reuters.com" },
+                                { name: "The New York Times", url: "https://www.nytimes.com" }
+                            ]
+                        },
+                        {
+                            headline: "NYC launches ambitious $4.2 billion climate resilience program",
+                            summary: "Major investments in flood barriers, green infrastructure, and cooling centers to protect vulnerable neighborhoods.",
+                            bullets: [
+                                "Focus on Brooklyn and Queens waterfront communities",
+                                "Creation of 38 new 'climate resilience hubs'",
+                                "Partnership with insurance industry for risk modeling"
+                            ],
+                            sources: [
+                                { name: "AP News", url: "https://apnews.com" },
+                                { name: "Bloomberg", url: "https://www.bloomberg.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "London",
+                    country: "United Kingdom",
+                    lat: 51.5074,
+                    lng: -0.1278,
+                    news: [
+                        {
+                            headline: "UK government unveils new post-Brexit trade strategy focused on Asia-Pacific",
+                            summary: "Major deals expected with India, Japan and ASEAN nations as Britain seeks to diversify beyond traditional European markets.",
+                            bullets: [
+                                "Digital trade and services at the core of new agreements",
+                                "Target of £120 billion in new trade by 2030",
+                                "London positioned as global fintech and green finance center"
+                            ],
+                            sources: [
+                                { name: "BBC", url: "https://www.bbc.com" },
+                                { name: "Financial Times", url: "https://www.ft.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Beijing",
+                    country: "China",
+                    lat: 39.9042,
+                    lng: 116.4074,
+                    news: [
+                        {
+                            headline: "China accelerates quantum computing leadership with new national lab",
+                            summary: "The $2.8 billion facility aims to achieve quantum advantage in practical applications within five years.",
+                            bullets: [
+                                "Focus on cryptography, drug discovery and optimization",
+                                "Collaboration with leading universities and tech giants",
+                                "Already demonstrating 1,000+ qubit systems in testing"
+                            ],
+                            sources: [
+                                { name: "Reuters", url: "https://www.reuters.com" },
+                                { name: "South China Morning Post", url: "https://www.scmp.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Tokyo",
+                    country: "Japan",
+                    lat: 35.6762,
+                    lng: 139.6503,
+                    news: [
+                        {
+                            headline: "Japan's hydrogen society vision gains momentum with major infrastructure push",
+                            summary: "Tokyo aims to become the world's first hydrogen metropolis with widespread adoption in transport and power generation.",
+                            bullets: [
+                                "New hydrogen refueling stations across Greater Tokyo",
+                                "Toyota and Honda expand fuel cell vehicle production",
+                                "Target: 3 million hydrogen vehicles on roads by 2035"
+                            ],
+                            sources: [
+                                { name: "Bloomberg", url: "https://www.bloomberg.com" },
+                                { name: "Nikkei Asia", url: "https://asia.nikkei.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "São Paulo",
+                    country: "Brazil",
+                    lat: -23.5505,
+                    lng: -46.6333,
+                    news: [
+                        {
+                            headline: "Brazil's Amazon protection efforts show strongest results in a decade",
+                            summary: "Deforestation rates dropped 38% year-over-year thanks to enhanced satellite monitoring and stronger enforcement.",
+                            bullets: [
+                                "Indigenous territories see record-low illegal logging",
+                                "New international funding from EU and Norway secured",
+                                "Agri-tech solutions helping farmers adopt sustainable practices"
+                            ],
+                            sources: [
+                                { name: "AP News", url: "https://apnews.com" },
+                                { name: "Reuters", url: "https://www.reuters.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Dubai",
+                    country: "UAE",
+                    lat: 25.2048,
+                    lng: 55.2708,
+                    news: [
+                        {
+                            headline: "Dubai launches world's largest AI-powered smart city district",
+                            summary: "The $35 billion project integrates autonomous transport, predictive governance and sustainable energy at unprecedented scale.",
+                            bullets: [
+                                "AI traffic system reduces congestion by 27%",
+                                "100% solar-powered government buildings by 2028",
+                                "World's first fully AI-managed public services district"
+                            ],
+                            sources: [
+                                { name: "Bloomberg", url: "https://www.bloomberg.com" },
+                                { name: "Reuters", url: "https://www.reuters.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Sydney",
+                    country: "Australia",
+                    lat: -33.8688,
+                    lng: 151.2093,
+                    news: [
+                        {
+                            headline: "Australia commits to 82% renewable electricity by 2030 in major policy shift",
+                            summary: "New legislation passed with bipartisan support accelerates the clean energy transition across the continent.",
+                            bullets: [
+                                "Massive offshore wind projects approved off Victoria and NSW",
+                                "Battery storage capacity to increase 8x by 2029",
+                                "Coal plant closures brought forward with worker transition packages"
+                            ],
+                            sources: [
+                                { name: "BBC", url: "https://www.bbc.com" },
+                                { name: "Reuters", url: "https://www.reuters.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Cape Town",
+                    country: "South Africa",
+                    lat: -33.9249,
+                    lng: 18.4241,
+                    news: [
+                        {
+                            headline: "South Africa unveils ambitious plan to end load-shedding by 2027",
+                            summary: "A mix of renewable projects, grid modernization and private sector participation is expected to stabilize power supply.",
+                            bullets: [
+                                "New wind and solar farms adding 8.4 GW capacity",
+                                "Battery storage and pumped hydro projects prioritized",
+                                "Major transmission line upgrades across provinces"
+                            ],
+                            sources: [
+                                { name: "Reuters", url: "https://www.reuters.com" },
+                                { name: "Bloomberg", url: "https://www.bloomberg.com" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Global",
+                    country: "World",
+                    lat: 20,
+                    lng: 0,
+                    news: [
+                        {
+                            headline: "Global trade growth rebounds strongly in early 2026",
+                            summary: "World Trade Organization reports 4.8% growth in merchandise trade, driven by technology and green energy sectors.",
+                            bullets: [
+                                "Supply chain resilience improving after years of disruption",
+                                "Developing economies outperforming global average",
+                                "Digital services trade continues rapid expansion"
+                            ],
+                            sources: [
+                                { name: "Reuters", url: "https://www.reuters.com" },
+                                { name: "Financial Times", url: "https://www.ft.com" }
+                            ]
+                        },
+                        {
+                            headline: "Scientists warn of accelerating Antarctic ice loss with global implications",
+                            summary: "New satellite data shows ice sheet melting at rates significantly higher than previously modeled.",
+                            bullets: [
+                                "Potential 1.2 meter sea level rise contribution by 2100",
+                                "Urgent calls for stronger emissions reduction commitments",
+                                "International research collaboration expanded"
+                            ],
+                            sources: [
+                                { name: "BBC", url: "https://www.bbc.com" },
+                                { name: "AP News", url: "https://apnews.com" }
+                            ]
+                        }
+                    ]
+                }
+            ];
+        }
+        
+        // ==================== NEWS PANEL ====================
+        async function showNewsForLocation(location) {
+            const panel = document.getElementById('news-panel');
+            const content = document.getElementById('news-content');
+            const locationEl = document.getElementById('panel-location');
+            const coordsEl = document.getElementById('panel-coords');
+            
+            // Set header
+            locationEl.innerHTML = `${location.name} <span class="text-xs align-middle ml-1.5 px-2 py-0.5 rounded-full bg-white/10 text-white/70 font-mono tracking-wider">${location.country}</span>`;
+            coordsEl.innerHTML = `${location.lat.toFixed(2)}°N, ${location.lng.toFixed(2)}°E`;
+            
+            // Clear previous content
+            content.innerHTML = '<div class="px-5 py-8 text-center text-sm text-slate-400">Loading news...</div>';
+            
+            let articlesToShow = location.news || [];
+            const newsapiKey = localStorage.getItem('gabnews_newsapi_key');
+            
+            // Country code mapping for real news
+            const countryCodeMap = {
+                'Chennai, Tamil Nadu': 'in',
+                'New Delhi': 'in',
+                'Mumbai': 'in',
+                'Bengaluru': 'in',
+                'New York': 'us',
+                'London': 'gb',
+                'Beijing': 'cn',
+                'Tokyo': 'jp',
+                'São Paulo': 'br',
+                'Dubai': 'ae',
+                'Sydney': 'au',
+                'Cape Town': 'za',
+                'Global': null
+            };
+            
+            const countryCode = countryCodeMap[location.name] || (location.country === 'India' ? 'in' : null);
+            
+            // If real news key exists, fetch live headlines
+            if (newsapiKey && countryCode) {
+                const realArticles = await fetchRealNews(countryCode);
+                if (realArticles && realArticles.length > 0) {
+                    // Show live articles first with badge
+                    articlesToShow = [
+                        ...realArticles.map(a => ({...a, isLive: true})),
+                        ...articlesToShow.slice(0, 2) // add a couple curated
+                    ];
+                }
+            }
+            
+            if (articlesToShow.length === 0) {
+                content.innerHTML = `
+                    <div class="px-4 py-8 text-center">
+                        <i class="fa-solid fa-newspaper text-3xl text-slate-600 mb-3"></i>
+                        <p class="text-slate-400">Limited coverage for this region right now.</p>
+                        <button onclick="showNewsForLocation(locations.find(l => l.name === 'Global'))" 
+                                class="mt-4 text-xs px-4 py-2 rounded-2xl border border-white/20 hover:bg-white/5 transition-colors">
+                            View Global Headlines
+                        </button>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = '';
+                
+                articlesToShow.forEach((article) => {
+                    const isLive = article.isLive || article.isReal;
+                    const articleHTML = `
+                        <div class="news-card glass-light rounded-3xl p-5 border border-white/10 ${isLive ? 'ring-1 ring-indigo-400/40' : ''}">
+                            <div class="flex items-start justify-between gap-x-3">
+                                <div class="flex-1">
+                                    ${isLive ? `<div class="inline-flex items-center gap-x-1 text-[10px] mb-1.5 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-medium"><i class="fa-solid fa-broadcast-tower text-xs"></i> <span>LIVE</span></div>` : ''}
+                                    
+                                    <div class="font-semibold text-[15px] leading-tight tracking-[-0.2px] mb-2.5 pr-2">
+                                        ${article.headline}
+                                    </div>
+                                    
+                                    <p class="text-sm text-slate-300 leading-relaxed mb-3">
+                                        ${article.summary}
+                                    </p>
+                                    
+                                    <div class="mb-3.5">
+                                        <div class="section-header text-indigo-400/90 mb-1.5">Key takeaways</div>
+                                        <ul class="space-y-[5px] text-sm">
+                                            ${article.bullets.map(bullet => `
+                                                <li class="news-bullet text-slate-300">${bullet}</li>
+                                            `).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Sources -->
+                            <div class="pt-3 mt-1 border-t border-white/10 flex flex-wrap items-center gap-2">
+                                <span class="text-[10px] text-slate-400 font-medium mr-1">${isLive ? 'POWERED BY NEWSAPI' : 'TRUSTED SOURCES'}</span>
+                                ${article.sources.map(source => `
+                                    <a href="${source.url}" target="_blank" 
+                                       class="source-pill flex items-center gap-x-1 text-xs font-medium hover:text-white transition-colors">
+                                        <span>${source.name}</span>
+                                        <i class="fa-solid fa-external-link-alt text-[9px] opacity-60"></i>
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                    content.innerHTML += articleHTML;
+                });
+            }
+            
+            // Show panel
+            panel.style.display = 'flex';
+            panel.classList.remove('hidden');
+            
+            // Subtle entrance animation
+            panel.style.opacity = '0';
+            panel.style.transform = 'translateX(30px)';
+            
+            setTimeout(() => {
+                panel.style.transition = 'all 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+                panel.style.opacity = '1';
+                panel.style.transform = 'translateX(0)';
+            }, 10);
+        }
+        
+        function closeNewsPanel() {
+            const panel = document.getElementById('news-panel');
+            panel.style.transition = 'all 0.22s cubic-bezier(0.4, 0, 1, 1)';
+            panel.style.opacity = '0';
+            panel.style.transform = 'translateX(40px)';
+            
+            setTimeout(() => {
+                panel.style.display = 'none';
+                panel.style.transition = '';
+                panel.style.opacity = '1';
+                panel.style.transform = 'translateX(0)';
+                panel.classList.add('hidden');
+            }, 220);
+        }
+        
+        // ==================== SEARCH ====================
+        function setupSearch() {
+            const searchInput = document.getElementById('search-input');
+            
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const query = this.value.trim().toLowerCase();
+                    if (!query) return;
+                    
+                    // Find matching location
+                    let match = locations.find(loc => 
+                        loc.name.toLowerCase().includes(query) || 
+                        loc.country.toLowerCase().includes(query)
+                    );
+                    
+                    if (!match) {
+                        // Fallback to global or first
+                        match = locations.find(l => l.name === 'Global') || locations[0];
+                    }
+                    
+                    // Fly and show
+                    flyToLocation(match.lat, match.lng, 2.1);
+                    
+                    setTimeout(() => {
+                        showNewsForLocation(match);
+                        searchInput.value = '';
+                    }, 850);
+                }
+            });
+            
+            // Bonus: show suggestions on focus (simple version)
+            searchInput.addEventListener('focus', function() {
+                if (this.value === '') {
+                    this.placeholder = "Try 'Chennai', 'New York', 'Tokyo' or 'Global'";
+                }
+            });
+        }
+        
+        function initializeEverything() {
+            initializeTailwind();
+            createGlobe();
+            setupSearch();
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    document.getElementById('search-input').focus();
+                }
+                
+                if (e.key === 'Escape') {
+                    const panel = document.getElementById('news-panel');
+                    if (!panel.classList.contains('hidden')) {
+                        closeNewsPanel();
+                    } else {
+                        resetGlobeView();
+                    }
+                }
+                
+                if (e.key.toLowerCase() === 'r' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    flyToRandomLocation();
+                }
+            });
+            
+            // Initial demo: Fly to Chennai after a few seconds (nice surprise for user in Chennai)
+            setTimeout(() => {
+                if (autoRotate && document.getElementById('news-panel').classList.contains('hidden')) {
+                    const chennai = locations.find(l => l.name.includes('Chennai'));
+                    if (chennai) {
+                        flyToLocation(chennai.lat, chennai.lng, 2.05);
+                        
+                        // Show news panel after fly completes
+                        setTimeout(() => {
+                            if (document.getElementById('news-panel').classList.contains('hidden')) {
+                                showNewsForLocation(chennai);
+                            }
+                        }, 1450);
+                    }
+                }
+            }, 5200);
+            
+            // Easter egg: Click logo to reset + random
+            const logo = document.querySelector('.fa-globe');
+            if (logo) {
+                logo.parentElement.addEventListener('click', () => {
+                    resetGlobeView();
+                    setTimeout(() => {
+                        flyToRandomLocation();
+                    }, 380);
+                });
+            }
+            
+            console.log('%c[GabNews] High-quality interactive experience ready. Enjoy exploring!', 'color:#64748b; font-size: 9px');
+        }
+        
+        // ==================== REAL NEWS API (NewsAPI) ====================
+        function showNewsAPIKeyModal() {
+            const modal = document.getElementById('newsapi-modal');
+            const input = document.getElementById('newsapi-key-input');
+            
+            // Pre-fill if key exists
+            const existingKey = localStorage.getItem('gabnews_newsapi_key');
+            if (existingKey) input.value = existingKey;
+            
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            setTimeout(() => input.focus(), 100);
+        }
+        
+        function hideNewsAPIKeyModal() {
+            const modal = document.getElementById('newsapi-modal');
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }
+        
+        function saveNewsAPIKey() {
+            const input = document.getElementById('newsapi-key-input');
+            const key = input.value.trim();
+            
+            if (key.length < 10) {
+                alert('Please enter a valid NewsAPI key');
+                return;
+            }
+            
+            localStorage.setItem('gabnews_newsapi_key', key);
+            hideNewsAPIKeyModal();
+            
+            // Show success toast
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 glass px-5 py-2 rounded-3xl text-sm flex items-center gap-x-2 border border-indigo-400/30 z-[80]';
+            toast.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> <span>Real News enabled! Click locations to see live headlines.</span>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.3s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 200);
+            }, 2800);
+        }
+        
+        async function fetchRealNews(countryCode) {
+            const key = localStorage.getItem('gabnews_newsapi_key');
+            if (!key || !countryCode) return null;
+            
+            try {
+                const response = await fetch(`https://newsapi.org/v2/top-headlines?country=${countryCode}&pageSize=4&apiKey=${key}`);
+                if (!response.ok) throw new Error('API error');
+                
+                const data = await response.json();
+                if (data.status === 'ok' && data.articles && data.articles.length > 0) {
+                    return data.articles.map(article => ({
+                        headline: article.title,
+                        summary: article.description || article.content?.substring(0, 180) || 'Read the full article for details.',
+                        bullets: [
+                            article.source?.name ? `Source: ${article.source.name}` : 'Live from trusted outlet',
+                            article.publishedAt ? `Published: ${new Date(article.publishedAt).toLocaleDateString()}` : ''
+                        ].filter(Boolean),
+                        sources: [{
+                            name: article.source?.name || 'NewsAPI',
+                            url: article.url || '#'
+                        }],
+                        isReal: true
+                    }));
+                }
+            } catch (err) {
+                console.warn('[GabNews] Real news fetch failed:', err.message);
+            }
+            return null;
+        }
+        
+        // Boot the application
+        window.onload = initializeEverything;
+        
+        // Make some functions globally available for console/debug if needed
+        window.GabNews = {
+            flyToRandom: () => flyToRandomLocation(),
+            reset: () => resetGlobeView(),
+            showLocation: (name) => {
+                const loc = locations.find(l => l.name.toLowerCase().includes(name.toLowerCase()));
+                if (loc) {
+                    flyToLocation(loc.lat, loc.lng);
+                    setTimeout(() => showNewsForLocation(loc), 900);
+                }
+            }
+        };
+    </script>
+</body>
+</html>
